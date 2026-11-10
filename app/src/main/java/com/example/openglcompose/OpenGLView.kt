@@ -5,6 +5,7 @@ import android.content.Context
 import javax.microedition.khronos.egl.EGLConfig
 import android.opengl.GLES20
 import android.util.Log
+import freemap.openglwrapper.Camera
 import freemap.openglwrapper.GLMatrix
 import javax.microedition.khronos.opengles.GL10
 import freemap.openglwrapper.GPUInterface
@@ -28,7 +29,15 @@ class OpenGLView(val ctx: Context)  :GLSurfaceView(ctx), GLSurfaceView.Renderer 
 
     val viewMatrix = GLMatrix()
     val projMatrix = GLMatrix()
+    val sensorMatrix = GLMatrix()
+    val mtxSensorConversion = GLMatrix(
+    floatArrayOf(1f, 0f, 0f, 0f,
+                        0f, 0f, 1f, 0f,
+                        0f, -1f, 0f, 0f,
+                        0f, 0f, 0f, 1f)
+    )
 
+    val cam = Camera()
 
     // We initialise the rendering here
     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
@@ -59,7 +68,7 @@ class OpenGLView(val ctx: Context)  :GLSurfaceView(ctx), GLSurfaceView.Renderer 
                     0.5f, 0f, 6f,
                     -0.5f, 0f, 6f,
                     0f, 1f, 6f
-                        )
+                        ).map { it * 50f}.toFloatArray()
                 val fbuf = OpenGLUtils.makeFloatBuffer(coords)
 
                 val refAVertex = gpu.getAttribLocation("aVertex")
@@ -79,10 +88,13 @@ class OpenGLView(val ctx: Context)  :GLSurfaceView(ctx), GLSurfaceView.Renderer 
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
 
         viewMatrix.setAsIdentityMatrix()
+        viewMatrix.multiply(sensorMatrix)
+
+        viewMatrix.applyTranslationMatrix(-cam.position.x, -cam.position.y, -cam.position.z)
 
         gpu.sendMatrix(refUViewMtx, viewMatrix)
 
-        if(refUColour >= 0) {
+        if (refUColour >= 0) {
             gpu.setUniform4FloatArray(refUColour, red)
             gpu.drawBufferedTriangles(0, 3)
             gpu.setUniform4FloatArray(refUColour, yellow)
@@ -102,9 +114,5 @@ class OpenGLView(val ctx: Context)  :GLSurfaceView(ctx), GLSurfaceView.Renderer 
         if(refUProjMtx > -1) {
             gpu.sendMatrix(refUProjMtx, projMatrix)
         }
-    }
-
-    fun setOrientMtx(oMtx: FloatArray) {
-        // TODO complete
     }
 }

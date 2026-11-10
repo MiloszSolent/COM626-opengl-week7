@@ -48,4 +48,19 @@ class GLMatrix(var values: FloatArray = floatArrayOf(1f,0f,0f,0f,0f,1f,0f,0f,0f,
         Matrix.multiplyMV(result, 0, values, 0, vec, 0)
         return result
     }
+
+    override fun toString(): String {
+        return values.contentToString()
+    }
+
+    fun correctSensorMatrix() {
+        val correctionMatrix = GLMatrix(floatArrayOf(
+            1f, 0f, 0f, 0f,
+            0f, 0f, 1f, 0f,
+            0f, -1f, 0f, 0f,
+            0f, 0f, 0f, 1f
+        ))
+
+        multiply(correctionMatrix)
+    }
 }
